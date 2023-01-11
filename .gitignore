@@ -1,0 +1,4 @@
+tests/*
+old_tests/
+user/config/*
+server/config/*

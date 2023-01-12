@@ -1,9 +1,11 @@
 import os
 import subprocess
+import time
 
 def run_test(p):
     print("Running test " + p)
-    # subprocess.run(["./utils/test.sh", p])
+    subprocess.run(["./utils/test.sh", p])
+    time.sleep(3)
 
 def recurse_tests(_p):
     p = os.path.abspath(_p)

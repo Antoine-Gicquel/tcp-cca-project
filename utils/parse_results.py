@@ -27,7 +27,7 @@ for c in tcp_ccas:
                 users = os.listdir(f"./tests/{ folder_prefix }{ c }/{ o_c }/{ r }/{ i }/results/users")
                 assert "101.json" in users
                 for u in users:
-                    u_int = int(u.split("."[0]), 10) - 101
+                    u_int = int(u.split(".")[0], 10) - 101
                     content = ""
                     with open(f"./tests/{ folder_prefix }{ c }/{ o_c }/{ r }/{ i }/results/users/{ u }", "r") as f:
                         content = json.loads(f.read())
@@ -49,28 +49,33 @@ for c in tcp_ccas:
 # Draw the results
 
 fig = plt.figure()
+fig.set_tight_layout(True)
+fig.suptitle('Proportion of bandwidth used by tested subject', fontsize=16)
 plot_y = -1
 bar_width = 0.3
 for cca in results:
     plot_x = 0
     plot_y += 1
     for a_cca in results[cca]:
-        ax = fig.add_axes([plot_x, plot_y, 1, 1])
+        ax = fig.add_subplot(len(results[cca]), len(results), plot_x + plot_y*len(results[cca]) + 1)
         plot_x += 1
-        ax.set_title(f"{ cca } vs { a_cca }")
+        ax.set_title(f"Tested { cca } against { a_cca }")
         ax.set_xlabel("Number of adversaries")
         ax.set_ylabel("Fraction of the bandwith")
+        ax.set_ylim([0, 1])
         x = None
+        x_init = False
         reg_id = 0
         for region in results[cca][a_cca]:
             bar = []
-            if x == None:
+            if not x_init:
                 x = np.arange(len(results[cca][a_cca][region]))
+                x_init = True
                 ax.set_xticks(x, sorted([r for r in results[cca][a_cca][region]]))
             for nb_adv in sorted([r for r in results[cca][a_cca][region]]):
-                bandwidth_portion = results[cca][a_cca][region][nb_adv][0]["sent"] / (results[cca][a_cca][region][nb_adv][0]["sent"] + results[cca][a_cca][region][nb_adv]["total_adversaries"]["sent"])
+                bandwidth_portion = results[cca][a_cca][region][nb_adv][0]["sent"] / (results[cca][a_cca][region][nb_adv][0]["sent"] + results[cca][a_cca][region][nb_adv]["total_adversary"]["sent"])
                 bar.append(bandwidth_portion)
-            rects = ax.bar(x + bar_width*reg_id, bar, bar_width, label=region)
+            rects = ax.bar(x + bar_width*reg_id - (len(results[cca][a_cca])-1)*bar_width/2, bar, bar_width, label=region)
             reg_id += 1
         ax.legend()
 

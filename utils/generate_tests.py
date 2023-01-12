@@ -6,7 +6,7 @@ import copy
 
 logging.basicConfig(level=logging.INFO)
 # run_id = hex(random.getrandbits(32))[2:]
-with open("./utils/secrets/secret.json", "r") as f:
+with open("./utils/secrets/secrets.json", "r") as f:
     SECRETS = json.load(f)
 
 

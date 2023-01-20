@@ -50,7 +50,7 @@ for c in tcp_ccas:
 
 fig = plt.figure()
 fig.set_tight_layout(True)
-fig.suptitle('Proportion of bandwidth used by tested subject', fontsize=16)
+fig.suptitle('Proportion of bandwidth used by tested subject\n(Total traffic in KB on top of column)', fontsize=16)
 plot_y = -1
 bar_width = 0.3
 for cca in results:
@@ -76,6 +76,7 @@ for cca in results:
                 bandwidth_portion = results[cca][a_cca][region][nb_adv][0]["sent"] / (results[cca][a_cca][region][nb_adv][0]["sent"] + results[cca][a_cca][region][nb_adv]["total_adversary"]["sent"])
                 bar.append(bandwidth_portion)
             rects = ax.bar(x + bar_width*reg_id - (len(results[cca][a_cca])-1)*bar_width/2, bar, bar_width, label=region)
+            plt.bar_label(rects, [str(round((results[cca][a_cca][region][nb_adv][0]["sent"] + results[cca][a_cca][region][nb_adv]["total_adversary"]["sent"])/1000)) for nb_adv in sorted([r for r in results[cca][a_cca][region]])])
             reg_id += 1
         ax.legend()
 

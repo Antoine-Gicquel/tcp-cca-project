@@ -1,4 +1,2 @@
-Make a VM out of this
-Run all the tests
-Debug the display script
+Plot the average of all tests
 Make an unfair but viable TCP CCA

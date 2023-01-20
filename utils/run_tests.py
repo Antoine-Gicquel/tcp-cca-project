@@ -1,6 +1,11 @@
 import os
 import subprocess
 import time
+import shutil
+
+# CHANGER ICI POUR DEFINIR SUR COMBIEN DE VALEURS FAIRE LES MOYENNES
+nb_average = 3
+
 
 def run_test(p):
     print("Running test " + p)
@@ -17,4 +22,9 @@ def recurse_tests(_p):
             if os.path.isdir(os.path.join(p, x)):
                 recurse_tests(os.path.join(p, x))
 
-recurse_tests("./tests")
+def save_results(tests_path, save_path):
+    shutil.copytree(tests_path, save_path)
+
+for i in range(1, nb_average + 1):
+    recurse_tests("./tests")
+    save_results("./tests", f"./results/run_{i}")

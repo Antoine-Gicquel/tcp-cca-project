@@ -70,19 +70,22 @@ for c in tcp_ccas:
                 links = copy.deepcopy(links_default)
                 nodes = copy.deepcopy(nodes_default)
                 nodes["users"]["count"] = n+1
+                # On définit le premier user
                 user = copy.deepcopy(user_default)
                 user["cca"] = c
                 user["server_ip"] = regions[r]
-                user["server_port"] = 5201
+                user["server_port"] = 5201 # CHANGER ICI LE PORT DU SERVEUR IPERF DE L'UTILISATEUR TEST
                 nodes["users"]["101"] = user
-                for i in range(n):
-                    node_id = str(102+i)
+                # Puis on définit les n users "adversaires"
+                for i in range(1, n+1):
+                    node_id = str(101+i)
                     user = copy.deepcopy(user_default)
                     user["cca"] = o_c
                     user["server_ip"] = regions[r]
-                    user["server_port"] = 5202+i
+                    user["server_port"] = 5201+i # CHANGER ICI LES PORTS DES SERVEURS IPERF DES UTILISATEURS "ADVERSAIRES"
                     nodes["users"][node_id] = user
 
+                # Enfin, on écrit les configuration dans les bons fichiers
                 with open(f"./tests/auto-{ c }/{ o_c }/{ r }/{ n }/links.json", "w+") as f:
                     f.write(json.dumps(links, indent=4))
                 with open(f"./tests/auto-{ c }/{ o_c }/{ r }/{ n }/nodes.json", "w+") as f:

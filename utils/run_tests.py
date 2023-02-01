@@ -2,29 +2,53 @@ import os
 import subprocess
 import time
 import shutil
+import json
+import sys
 
-# CHANGER ICI POUR DEFINIR SUR COMBIEN DE VALEURS FAIRE LES MOYENNES
-nb_average = 3
+nb_dockers = 5
+nb_tests = 0
+current_tests = 0
+if len(sys.argv) != 3:
+    print("Usage : run_tests.py <tests_path> <results_path>")
+
+tests_path = sys.argv[1]
+save_path = sys.argv[2]
 
 
 def run_test(p):
-    print("Running test " + p)
-    subprocess.run(["./utils/test.sh", p])
-    time.sleep(3)
+    subprocess.run(["./utils/test.sh", p, str(nb_dockers)])
+    time.sleep(1)
 
-def recurse_tests(_p):
+def recurse_tests(_p, run_real=True):
+    global nb_dockers, nb_tests, current_tests
     p = os.path.abspath(_p)
     l = os.listdir(p)
     if "nodes.json" in l and "links.json" in l:
-        run_test(p)
+        if run_real:
+            print("Progress :", round(100*current_tests / nb_tests, 1), "%")
+            run_test(p)
+            current_tests += 1
+        else:
+            nb_tests += 1
+            with open(f"{ p }/nodes.json", "r") as f:
+                nb_dockers = max(nb_dockers, json.load(f)["count"])
     elif True in [os.path.isdir(os.path.join(p, x)) for x in l]:
         for x in l:
             if os.path.isdir(os.path.join(p, x)):
-                recurse_tests(os.path.join(p, x))
+                recurse_tests(os.path.join(p, x), run_real)
 
-def save_results(tests_path, save_path):
-    shutil.copytree(tests_path, save_path)
+def save_results(_tests_path, _save_path):
+    shutil.copytree(_tests_path, _save_path)
 
-for i in range(1, nb_average + 1):
-    recurse_tests("./tests")
-    save_results("./tests", f"./results/run_{i}")
+
+# MAIN
+
+# On initialise nb_dockers
+recurse_tests(tests_path, run_real=False)
+
+subprocess.run(["./utils/init_testbench.sh", str(nb_dockers)])
+
+recurse_tests(tests_path, run_real=True)
+save_results(tests_path, save_path)
+
+subprocess.run(["./utils/cleanup_testbench.sh"])

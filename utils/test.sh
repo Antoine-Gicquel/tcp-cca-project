@@ -1,60 +1,45 @@
 #!/bin/bash
 
 TEST_PATH="$1"
+MAX_USERS="$2"
 
 NODES=$(cat $TEST_PATH/nodes.json)
 LINKS=$(cat $TEST_PATH/links.json)
 
-NB_USERS=$(echo $NODES | jq -M .users.count)
-NB_SERVERS=$(echo $NODES | jq -M .servers.count)
-
 echo "Loading test $TEST_PATH"
 echo "Clearing previous results"
-rm ./*/results/*.json
+sudo rm ./users/results/*.json 2>/dev/null
+sudo rm ./users/config/*.cfg 2>/dev/null
 
 echo "Setting up the containers config files..."
 # Setup the .cfg files
-./utils/setup_containers_configs.sh $TEST_PATH
+sudo ./utils/setup_containers_configs.sh $TEST_PATH
 
-echo "Opening host firewall..."
-# Setup the host firewall rules
-./utils/setup_firewall.sh
-
-echo "Booting the containers..."
-# Launch the lab
-docker compose up --scale usr=$NB_USERS --scale srv=$NB_SERVERS --detach
-sleep 2
-
-echo "Setting the IP routes inside the containers..."
-# Setup container addresses and routes
-./utils/setup_routes.sh
 
 echo "Setting up Traffic Control (Network Emulation)..."
-# Setup tcconfig
+# TODO Setup tcconfig
 ./utils/setup_tcconfig.sh $TEST_PATH
 
 echo "Done ! Sending signal to start tests"
-touch ./shared/lock
+touch ./shared/lock_test
 
 echo "Waiting for tests to finish..."
 # wait for test
 
-while [ $(docker compose ps -q --status running | wc -l) -gt 2 ]
+while [ $(ls ./shared/ready | wc -l) -lt $MAX_USERS ]
 do
-    sleep 5
+    sleep 2
 done
 
-echo "Tests are over, shutting down the lab..."
-# bring lab down
-docker compose down
+sudo rm ./shared/ready/* 2>/dev/null
+
+
 
 echo "Exporting results..."
 # parse results
-rm -rf $TEST_PATH/results
+sudo rm -rf $TEST_PATH/results 2>/dev/null
 mkdir $TEST_PATH/results
-mkdir $TEST_PATH/results/users
-mkdir $TEST_PATH/results/servers
 
-mv ./user/results/*.json $TEST_PATH/results/users/
-mv ./server/results/*.json $TEST_PATH/results/servers/
+mv ./users/results/*.json $TEST_PATH/results/
 
+echo "==============================="

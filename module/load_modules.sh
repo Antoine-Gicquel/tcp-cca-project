@@ -1,10 +1,10 @@
 #!/bin/bash
 
-modules=$(ls -d */)
+echo "Loading BBR"
+sudo modprobe tcp_bbr
 
-for m in $modules
-do
-  echo Loading $m
-  cd $m && make clean && make && sudo make insert
-  cd ..
-done
+echo "Loading Infinity"
+cd infinity;
+sudo make remove
+make clean && make && sudo make insert
+cd ..

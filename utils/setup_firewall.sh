@@ -5,7 +5,7 @@ RULE_DOCKER=$(nft list chain ip filter DOCKER-USER | grep 'iifname "br-\*" accep
 
 if [ $RULE_POSTROUTING -eq 0 ]
 then
-    nft insert rule ip nat POSTROUTING position 10 oifname "br-*" accept
+    nft insert rule ip nat POSTROUTING oifname "br-*" accept
 fi
 if [ $RULE_DOCKER -eq 0 ]
 then

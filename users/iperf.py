@@ -13,14 +13,20 @@ def get_config():
     r = ""
     try:
         with open(config_path, "r") as f:
-            r = f.read()
+            r = json.loads(f.read())
     except Exception as e:
-        r = json.dumps({"error": e})
-    return json.loads(r)
+        print(e)
+        return None
+    return r
 
 print("Hello Client")
 
+print("Getting config")
 config = get_config()
+
+if config == None:
+    print("I have no job to do here")
+    exit(0)
 
 for k in config.keys():
     try:

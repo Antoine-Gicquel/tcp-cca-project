@@ -7,8 +7,7 @@ TEST_PATH=$1
 NODES=$(cat $TEST_PATH/nodes.json)
 LINKS=$(cat $TEST_PATH/links.json)
 
-NB_USERS=$(echo $NODES | jq -M .users.count)
-NB_SERVERS=$(echo $NODES | jq -M .servers.count)
+NB_USERS=$(echo $NODES | jq -M .count)
 
 
 # Pour obtenir l'interface côté hôte qui correspond à une interface du docker
@@ -52,36 +51,15 @@ apply_config () {
 
 
 ################################################
-################## BACKBONE ####################
-################################################
-
-R1_ETH0=$(get_interface r1 eth0)
-R2_ETH0=$(get_interface r2 eth0)
-# TODO appliquer les règles qui sont dans le links.json
-apply_config $R1_ETH0 "backbone"
-apply_config $R2_ETH0 "backbone"
-
-
-################################################
 ################## DEFAULTS ####################
 ################################################
 
-DEFAULT_USER_LINK_CONFIG=$(echo $NODES | jq -M --raw-output .users.default_settings.link)
+DEFAULT_USER_LINK_CONFIG=$(echo $NODES | jq -M --raw-output .default_settings.link)
 if [ $(echo $DEFAULT_USER_LINK_CONFIG | grep -E "^null\$" | wc -l) -eq 0 ]
 then
     for ((c=1; c<=$NB_USERS; c++)); do
         INTERFACE=$(get_interface "--index $c usr" eth0)
         apply_config $INTERFACE $DEFAULT_USER_LINK_CONFIG
-    done
-fi
-
-# TODO appliquer la règle par défaut sur les servers
-DEFAULT_SERVER_LINK_CONFIG=$(echo $NODES | jq -M --raw-output .servers.default_settings.link)
-if [ $(echo $DEFAULT_SERVER_LINK_CONFIG | grep -E "^null\$" | wc -l) -eq 0 ]
-then
-    for ((s=1; s<=$NB_SERVERS; s++)); do
-        INTERFACE=$(get_interface "--index $s srv" eth0)
-        apply_config $INTERFACE $DEFAULT_SERVER_LINK_CONFIG
     done
 fi
 
@@ -92,19 +70,11 @@ fi
 
 # Users
 for ((c=1; c<=$NB_USERS; c++)); do
-    USER_LINK_CONFIG=$(echo $NODES | jq -M --raw-output .users.\"$((c + 100))\".link)
+    USER_LINK_CONFIG=$(echo $NODES | jq -M --raw-output .\"$((c + 100))\".link)
     if [ $(echo $USER_LINK_CONFIG | grep -E "^null\$" | wc -l) -eq 0 ]
     then
         INTERFACE=$(get_interface "--index $c usr" eth0)
         apply_config $INTERFACE $USER_LINK_CONFIG
     fi
 done
-# same for servers
-for ((s=1; s<=$NB_SERVERS; s++)); do
-    SERVER_LINK_CONFIG=$(echo $NODES | jq -M --raw-output .servers.\"$((s + 100))\".link)
-    if [ $(echo $SERVER_LINK_CONFIG | grep -E "^null\$" | wc -l) -eq 0 ]
-    then
-        INTERFACE=$(get_interface "--index $s srv" eth0)
-        apply_config $INTERFACE $SERVER_LINK_CONFIG
-    fi
-done
+

@@ -7,14 +7,13 @@ services:
     cap_add:
       - NET_ADMIN
     depends_on:
-      - "r1"
-      - "r2"
+      - "router"
     volumes:
-      - ./user:/app
+      - ./users:/app
       - ./shared:/shared
     networks:
       - usrnet
-  r1:
+  router:
     build: .
     privileged: true
     stop_grace_period: 1s
@@ -28,58 +27,18 @@ services:
       - ./shared:/shared
     networks:
       usrnet:
-        priority: 100
         ipv4_address: 172.20.10.2
-      backbone:
-        priority: 1000
-        ipv4_address: 172.20.250.2
-  r2:
-    build: .
-    privileged: true
-    stop_grace_period: 1s
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    sysctls:
-      - net.ipv4.ip_forward=1
-    volumes:
-      - ./router:/app
-      - ./shared:/shared
-    networks:
-      srvnet:
-        priority: 100
-        ipv4_address: 172.20.20.2
-      backbone:
-        priority: 1000
-        ipv4_address: 172.20.250.3
-  srv:
-    build: .
-    privileged: true
-    stop_grace_period: 1s
-    cap_add:
-      - NET_ADMIN
-    depends_on:
-      - "r1"
-      - "r2"
-    volumes:
-      - ./server:/app
-      - ./shared:/shared
-    networks:
-      - srvnet
+      routernet:
+        
 
 networks:
-  backbone:
-    internal: false
-    ipam:
-      config:
-        - subnet: 172.20.250.0/24
   usrnet:
     internal: false
     ipam:
       config:
         - subnet: 172.20.10.0/24
-  srvnet:
+  routernet:
     internal: false
     ipam:
       config:
-        - subnet: 172.20.20.0/24
+        - subnet: 172.20.11.0/24

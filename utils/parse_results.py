@@ -3,11 +3,26 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+from math import sin, pi
 
 
-if len(sys.argv) != 2:
-    print("Usage : parse_results.py <results_path>")
-root_results = sys.argv[1]
+def jain_fairness(seq):
+    num = sum(seq) ** 2
+    den = len(seq) * sum(map(lambda x: x**2, seq))
+    return num/den
+
+def g_fairness(k, seq):
+    x_max = max(seq)
+    acc = 1
+    for x in seq:
+        acc *= sin((pi*x)/(2*x_max)) ** (1/k)
+    return acc
+
+
+if len(sys.argv) != 3:
+    print("Usage : parse_results.py bandwidth|g_fairness|jain_fairness <results_path>")
+plot_type = sys.argv[1]
+root_results = sys.argv[2]
 
 results = dict() # results[cca][adversary][region][number_of_adversaries] = parse_run_dict
 
@@ -25,6 +40,8 @@ def parse_run(path):
     stats["total_traffic"] = sum(res[u]["bytes"] for u in res.keys())
     stats["total_adversary_traffic"] = stats["total_traffic"] - res[1]["bytes"]
     stats["alg_proportion"] = res[1]["bytes"] / [1, stats["total_traffic"]][stats["total_traffic"] > 0]
+    stats["jain_fairness"] = jain_fairness([res[u]["bytes"] for u in users_list])
+    stats["g1_fairness"] = g_fairness(1, [res[u]["bytes"] for u in users_list])
     res["stats"] = stats
     return res
 
@@ -38,10 +55,16 @@ def parse_average(path):
         if not "total_traffic" in res_avg.keys():
             res_avg["total_traffic"] = 0
             res_avg["alg_proportion"] = 0
+            res_avg["jain_fairness"] = 0
+            res_avg["g1_fairness"] = 0
         res_avg["total_traffic"] += res[r]["stats"]["total_traffic"]
         res_avg["alg_proportion"] += res[r]["stats"]["alg_proportion"]
-    res_avg["total_traffic"] = int(round(res_avg["total_traffic"]/len(runs_list)/1000, 0))
+        res_avg["jain_fairness"] += res[r]["stats"]["jain_fairness"]
+        res_avg["g1_fairness"] += res[r]["stats"]["g1_fairness"]
+    res_avg["total_traffic"] = int(round(res_avg["total_traffic"]/len(runs_list)/1000000, 0))
     res_avg["alg_proportion"] /= len(runs_list)
+    res_avg["jain_fairness"] = round(res_avg["jain_fairness"] / len(runs_list), 2)
+    res_avg["g1_fairness"] = round(res_avg["g1_fairness"] / len(runs_list), 2)
     res["average"] = res_avg
     return res
 
@@ -77,16 +100,22 @@ def parse_algs(path):
         res[alg] = parse_adversaries(alg_path)
     return res
 
+# Plotting part
+
 def plot_region_on_subplot(ax, x, region, reg_id, data):
     bar = []
     bar_label = []
     bar_width = 0.3
     for nb_adv in sorted([r for r in data]):
-        # TODO
-        bandwidth_portion = data[nb_adv]["average"]["alg_proportion"]
-        bandwidth_total = data[nb_adv]["average"]["total_traffic"]
-        bar.append(bandwidth_portion)
-        bar_label.append(bandwidth_total)
+        bar_top = data[nb_adv]["average"]["total_traffic"]
+        if plot_type == "bandwidth":
+            bar_height = data[nb_adv]["average"]["alg_proportion"]
+        elif plot_type == "jain_fairness":
+            bar_height = data[nb_adv]["average"]["jain_fairness"]
+        elif plot_type == "g_fairness":
+            bar_height = data[nb_adv]["average"]["g1_fairness"]
+        bar.append(bar_height)
+        bar_label.append(bar_top)
     rects = ax.bar(x + bar_width*reg_id - (nb_regions-1)*bar_width/2, bar, bar_width, label=region)
     plt.bar_label(rects, bar_label)
     return
@@ -95,7 +124,12 @@ def plot_alg_vs_adv(fig, alg_id, alg_name, adv_id, adv_name, data):
     ax = fig.add_subplot(nb_algs, nb_algs, adv_id + alg_id*nb_algs + 1)
     ax.set_title(f"Tested { alg_name } against { adv_name }")
     ax.set_xlabel("Number of adversaries")
-    ax.set_ylabel("Fraction of the bandwith")
+    if plot_type == "bandwidth":
+        ax.set_ylabel("Fraction of bandwidth")
+    elif plot_type == "jain_fairness":
+        ax.set_ylabel("Jain fairness")
+    elif plot_type == "g_fairness":
+        ax.set_ylabel("G1 fairness")
     ax.set_ylim([0, 1])
     x = np.arange(len(data[list(data.keys())[0]]))
     ax.set_xticks(x, sorted([r for r in data[list(data.keys())[0]]]))
@@ -130,9 +164,17 @@ nb_regions, nb_algs = len(results[list(results.keys())[0]][list(results.keys())[
 
 # print(results)
 
-fig = plt.figure()
+fig = plt.figure("Tests results for " + root_results)
 fig.set_tight_layout(True)
-fig.suptitle('Proportion of bandwidth used by tested subject\n(Total traffic in KB on top of column)', fontsize=16)
+suptitle = root_results + '\n'
+if plot_type == "bandwidth":
+    suptitle += "Proportion of bandwidth used by tested subject"
+elif plot_type == "jain_fairness":
+    suptitle += "Jain fairness index"
+elif plot_type == "g_fairness":
+    suptitle += "G fairness index"
+suptitle += "\n(Total traffic in MB on top of column)"
+fig.suptitle(suptitle, fontsize=16)
 fill_fig(fig, results)
 
 plt.show()

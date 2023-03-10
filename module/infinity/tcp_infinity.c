@@ -1,7 +1,8 @@
 #include <net/tcp.h>
 
 
-static u32 max_cwnd = 0x00007fff;
+static u32 max_cwnd = 0x000fffff;
+// static u32 max_cwnd = 0x00007fff;
 
 static void infinitytcp_init(struct sock *sk)
 {

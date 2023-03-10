@@ -18,7 +18,7 @@ sudo ./utils/setup_containers_configs.sh $TEST_PATH
 
 echo "Setting up Traffic Control (Network Emulation)..."
 # TODO Setup tcconfig
-./utils/setup_tcconfig.sh $TEST_PATH
+sudo ./utils/setup_tcconfig.sh $TEST_PATH
 
 echo "Done ! Sending signal to start tests"
 touch ./shared/lock_test

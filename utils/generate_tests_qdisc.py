@@ -10,21 +10,17 @@ with open("./utils/secrets/secrets.json", "r") as f:
     SECRETS = json.load(f)
 
 
-# Full Config
-tcp_ccas = ["bbr", "hybla", "infinity", "vegas", "veno", "westwood", "cubic"]
-regions = SECRETS["regions_full"] # {"paris": "paris_server_ip", "frankfurt": "frankfurt_server_ip", ...}
-max_adversaries = 5
-average_calculation = 5
-
 # Small Config (for tests)
 tcp_ccas = ["bbr", "reno", "cubic", "infinity"]
+qdiscs = ["pfifo_fast", "red", "sfb", "choke", "fq", "codel", "fq_codel"]
 regions = SECRETS["regions_full"]
-max_adversaries = 4
+region_ip = regions["tokyo"]
+nb_adversaries = 4
 average_calculation = 4
 
 
 if len(sys.argv) != 2:
-    print("Usage : generate_tests.py <tests_path>")
+    print("Usage : generate_tests_qdisc.py <tests_path>")
 tests_root = sys.argv[1]
 
 
@@ -52,25 +48,26 @@ user_default = {
 }
 
 
-def write_test(alg, adversary, region, nb_adv, index):
-    test_path = f"{ tests_root }/{ alg }/{ adversary }/{ region }/{ nb_adv }/{ index }"
+def write_test(alg, adversary, qdisc, index):
+    test_path = f"{ tests_root }/{ adversary }/{ qdisc }/{ index }"
     os.makedirs(test_path, exist_ok=True)
     os.makedirs(f"{ test_path }/results", exist_ok=True)
     links = copy.deepcopy(links_default)
     nodes = copy.deepcopy(nodes_default)
-    nodes["count"] = nb_adv+1
+    links["backbone"]["qdisc"] = qdisc
+    nodes["count"] = nb_adversaries+1
     # On définit le premier user
     user = copy.deepcopy(user_default)
     user["cca"] = alg
-    user["server_ip"] = regions[region]
+    user["server_ip"] = region_ip
     user["server_port"] = 5201 # CHANGER ICI LE PORT DU SERVEUR IPERF DE L'UTILISATEUR TEST
     nodes["101"] = user
     # Puis on définit les n users "adversaires"
-    for i in range(1, nb_adv+1):
+    for i in range(1, nb_adversaries+1):
         node_id = str(101+i)
         user = copy.deepcopy(user_default)
         user["cca"] = adversary
-        user["server_ip"] = regions[region]
+        user["server_ip"] = region_ip
         user["server_port"] = 5201+i # CHANGER ICI LES PORTS DES SERVEURS IPERF DES UTILISATEURS "ADVERSAIRES"
         nodes[node_id] = user
 
@@ -81,24 +78,16 @@ def write_test(alg, adversary, region, nb_adv, index):
         f.write(json.dumps(nodes, indent=4))
 
 def generate_tests():
-    for alg in tcp_ccas:
-        test_algo(alg)
-
-def test_algo(alg):
     for adv in tcp_ccas:
-        test_against(alg, adv)
+        test_against("infinity", adv)
 
 def test_against(alg, adversary):
-    for r in regions:
-        test_region(alg, adversary, r)
+    for q in qdiscs:
+        test_qdisc(alg, adversary, q)
 
-def test_region(alg, adversary, region):
-    for nb_adv in range(1, max_adversaries+1):
-        test_nb_adversaries(alg, adversary, region, nb_adv)
-
-def test_nb_adversaries(alg, adversary, region, nb_adv):
+def test_qdisc(alg, adversary, qdisc):
     for i in range(1, average_calculation+1):
-        write_test(alg, adversary, region, nb_adv, i)
+        write_test(alg, adversary, qdisc, i)
 
 
 

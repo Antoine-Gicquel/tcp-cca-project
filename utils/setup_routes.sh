@@ -11,5 +11,9 @@ for ((c=1; c<=$clients; c++)); do
 done
 
 # Routage sur les routeurs
-docker compose -p testbench exec router ip r add default via 172.20.11.1 dev eth0
-docker compose -p testbench exec router nft insert rule ip nat POSTROUTING oifname "eth0" counter masquerade
+docker compose -p testbench exec router-qdisc ip r del default
+docker compose -p testbench exec router-qdisc ip r add default via 172.20.11.3 dev eth0
+docker compose -p testbench exec router-qdisc nft insert rule ip nat POSTROUTING oifname "eth0" counter masquerade
+docker compose -p testbench exec router-congestion ip r del default
+docker compose -p testbench exec router-congestion ip r add default via 172.20.11.1 dev eth0
+docker compose -p testbench exec router-congestion nft insert rule ip nat POSTROUTING oifname "eth0" counter masquerade
